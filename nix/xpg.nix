@@ -1,7 +1,12 @@
 {
   stdenv, lib, makeWrapper, fetchurl, writeShellScriptBin, findutils, entr, lcov, gnused,
   gdb, writeText, ourPg, checked-shell-script, git,
-  extensions ? {}
+  extensions ? {},
+  # PostgreSQL major versions supported by this build of xpg. Every listed
+  # version (and its cassert variant) becomes a runtime dependency of the
+  # resulting derivation, so narrowing this list (see `forVersions` in
+  # nix/packages.nix) shrinks the closure to just the versions needed.
+  versions ? ["19" "18" "17" "16" "15" "14" "13" "12"]
 } :
 let
   isLinux = stdenv.isLinux;
@@ -15,6 +20,20 @@ let
       builtins.getAttr version extensions
     else
       [];
+  # keep 17 as the default version for backwards compatibility, unless it's not included
+  defaultVersion = if builtins.elem "17" versions then "17" else builtins.head versions;
+  # pg versions older than 15 don't have the regress output
+  versionCaseBranch = v: ''
+    ${v})
+      if [ "$_arg_cassert" = on ]; then
+        export PATH=${ourPg."postgresql_${v}_cassert"}/bin:"$PATH"
+      else
+        export PATH=${ourPg."postgresql_${v}"}/bin:"$PATH"
+      fi
+      ${lib.optionalString (lib.versionAtLeast v "15") "export PG_REGRESS_TESTS=${ourPg."postgresql_${v}".regress}"}
+      _ext_paths=${buildExtPaths (extensionsFor v)}
+      ;;
+  '';
   xpg = checked-shell-script
   {
     name = "xpg";
@@ -22,12 +41,12 @@ let
     args = [
       "ARG_POSITIONAL_SINGLE([operation], [Operation])"
       "ARG_TYPE_GROUP_SET([OPERATION], [OPERATION], [operation], [build,test,test-core,coverage,psql,gdb,pgbench])"
-      "ARG_OPTIONAL_SINGLE([version], [v], [PostgreSQL version], [17])"
+      "ARG_OPTIONAL_SINGLE([version], [v], [PostgreSQL version], [${defaultVersion}])"
       "ARG_OPTIONAL_SINGLE([options], [o], [Options for the database cluster],)"
       "ARG_OPTIONAL_SINGLE([init-options], [], [Options for the initialization of pgbench],)"
       "ARG_OPTIONAL_BOOLEAN([cassert], [], [Use the cassert-enabled PostgreSQL build])"
       "ARG_OPTIONAL_SINGLE([commit], [], [Run the command in a new git worktree and check out <commit>])"
-      "ARG_TYPE_GROUP_SET([VERSION], [VERSION], [version], [19,18,17,16,15,14,13,12])"
+      "ARG_TYPE_GROUP_SET([VERSION], [VERSION], [version], [${builtins.concatStringsSep "," versions}])"
       "ARG_LEFTOVERS([psql arguments])"
     ];
   }
@@ -61,75 +80,7 @@ let
   fi
 
   case "$_arg_version" in
-    19)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_19_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_19}/bin:"$PATH"
-      fi
-      export PG_REGRESS_TESTS=${ourPg.postgresql_19.regress}
-      _ext_paths=${buildExtPaths (extensionsFor "19")}
-      ;;
-    18)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_18_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_18}/bin:"$PATH"
-      fi
-      export PG_REGRESS_TESTS=${ourPg.postgresql_18.regress}
-      _ext_paths=${buildExtPaths (extensionsFor "18")}
-      ;;
-    17)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_17_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_17}/bin:"$PATH"
-      fi
-      export PG_REGRESS_TESTS=${ourPg.postgresql_17.regress}
-      _ext_paths=${buildExtPaths (extensionsFor "17")}
-      ;;
-    16)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_16_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_16}/bin:"$PATH"
-      fi
-      export PG_REGRESS_TESTS=${ourPg.postgresql_16.regress}
-      _ext_paths=${buildExtPaths (extensionsFor "16")}
-      ;;
-    15)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_15_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_15}/bin:"$PATH"
-      fi
-      export PG_REGRESS_TESTS=${ourPg.postgresql_15.regress}
-      _ext_paths=${buildExtPaths (extensionsFor "15")}
-      ;;
-    14)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_14_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_14}/bin:"$PATH"
-      fi
-      _ext_paths=${buildExtPaths (extensionsFor "14")}
-      ;;
-    13)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_13_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_13}/bin:"$PATH"
-      fi
-      _ext_paths=${buildExtPaths (extensionsFor "13")}
-      ;;
-    12)
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg.postgresql_12_cassert}/bin:"$PATH"
-      else
-        export PATH=${ourPg.postgresql_12}/bin:"$PATH"
-      fi
-      _ext_paths=${buildExtPaths (extensionsFor "12")}
-      ;;
+  ${builtins.concatStringsSep "" (map versionCaseBranch versions)}
   esac
 
   # TODO remove the need for this conditional once we apply the official extension_control_path patch from pg 18

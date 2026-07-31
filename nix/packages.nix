@@ -15,6 +15,9 @@ let
     in
     drv // {
       withExtensions = attrs: mkXpg attrs;
+      # variant of xpg that only supports the given pg versions, e.g. `xpg.forVersions ["17"]`,
+      # so consumers (like CI jobs testing a single version) don't pull the closure of every pg version
+      forVersions = versions: mkXpg { inherit versions; };
     };
 in
 {
