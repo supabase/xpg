@@ -15,9 +15,13 @@ let
     in
     drv // {
       withExtensions = attrs: mkXpg attrs;
-      # variant of xpg that only supports the given pg versions, e.g. `xpg.forVersions ["17"]`,
-      # so consumers (like CI jobs testing a single version) don't pull the closure of every pg version
-      forVersions = versions: mkXpg { inherit versions; };
+      # variant of xpg that only supports the given pg versions, so consumers (like CI jobs
+      # testing a single version) don't pull the closure of every pg version.
+      # accepts either a plain list of versions, e.g. `xpg.forVersions ["17"]`,
+      # or an attrset to also control other options, e.g.
+      # `xpg.forVersions { versions = ["17"]; cassert = false; }` to also drop
+      # the cassert-enabled builds from the closure.
+      forVersions = args: mkXpg (if builtins.isList args then { versions = args; } else args);
     };
 in
 {

@@ -3,10 +3,16 @@
   gdb, writeText, ourPg, checked-shell-script, git,
   extensions ? {},
   # PostgreSQL major versions supported by this build of xpg. Every listed
-  # version (and its cassert variant) becomes a runtime dependency of the
-  # resulting derivation, so narrowing this list (see `forVersions` in
-  # nix/packages.nix) shrinks the closure to just the versions needed.
-  versions ? ["19" "18" "17" "16" "15" "14" "13" "12"]
+  # version (and its cassert variant, unless `cassert = false`) becomes a
+  # runtime dependency of the resulting derivation, so narrowing this list
+  # (see `forVersions` in nix/packages.nix) shrinks the closure to just the
+  # versions needed.
+  versions ? ["19" "18" "17" "16" "15" "14" "13" "12"],
+  # Whether to include the cassert-enabled PostgreSQL builds (and the
+  # `--cassert` flag's ability to select them) in this build's closure.
+  # Disabling this halves the PostgreSQL closure for consumers (e.g. CI) that
+  # never pass `--cassert`.
+  cassert ? true
 } :
 let
   isLinux = stdenv.isLinux;
@@ -25,11 +31,19 @@ let
   # pg versions older than 15 don't have the regress output
   versionCaseBranch = v: ''
     ${v})
-      if [ "$_arg_cassert" = on ]; then
-        export PATH=${ourPg."postgresql_${v}_cassert"}/bin:"$PATH"
-      else
+      ${if cassert then ''
+        if [ "$_arg_cassert" = on ]; then
+          export PATH=${ourPg."postgresql_${v}_cassert"}/bin:"$PATH"
+        else
+          export PATH=${ourPg."postgresql_${v}"}/bin:"$PATH"
+        fi
+      '' else ''
+        if [ "$_arg_cassert" = on ]; then
+          echo 'This build of xpg was not built with cassert support.' >&2
+          exit 1
+        fi
         export PATH=${ourPg."postgresql_${v}"}/bin:"$PATH"
-      fi
+      ''}
       ${lib.optionalString (lib.versionAtLeast v "15") "export PG_REGRESS_TESTS=${ourPg."postgresql_${v}".regress}"}
       _ext_paths=${buildExtPaths (extensionsFor v)}
       ;;
