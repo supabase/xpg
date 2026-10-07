@@ -9,14 +9,14 @@ in
 with pkgs;
 let
   xpgPkgs = import ../default.nix;
-  pgsqlcheck15 = callPackage ../nix/plpgsql-check.nix {
-    postgresql = xpgPkgs.postgresql_15;
+  pgsqlcheck18 = callPackage ../nix/plpgsql-check.nix {
+    postgresql = xpgPkgs.postgresql_18;
   };
 in
 {
   xpg = xpgPkgs.xpg.withExtensions {
     extensions = {
-      "15" = [ pgsqlcheck15 ];
+      "18" = [ pgsqlcheck18 ];
     };
   };
 }

@@ -91,7 +91,7 @@ let
         ];
       }
       ''
-        export BUILD_DIR="build-$_arg_version" # this needs to be exported so external `make` commands pick it up
+        export BUILD_DIR="build-$_arg_version/postgresql" # this needs to be exported so external `make` commands pick it up
 
         registered_trap_cmds=()
 
@@ -127,10 +127,10 @@ let
         # PG 18+ includes upstream support for extension_control_path without our backport patch layout.
         if [ "$_arg_version" -ge 18 ]; then
           EXT_CONTROL_PATHS="$_ext_paths"
-          EXT_DYNLIB_PATHS="$_ext_paths"
+          EXT_DYNLIB_PATHS="$_ext_paths/lib"
         else
           EXT_CONTROL_PATHS="$_ext_paths/extension"
-          EXT_DYNLIB_PATHS="$_ext_paths"
+          EXT_DYNLIB_PATHS="$_ext_paths/lib"
         fi
 
         pid_file_name="$BUILD_DIR"/bgworker.pid
@@ -146,7 +146,8 @@ let
         # commands that require the build ready
         case "$_arg_operation" in
           test)
-            make build TEST=1 1>&2
+            make
+            make prefix="$BUILD_DIR" datadir="$BUILD_DIR" libdir="$BUILD_DIR"/lib install TEST=1 1>&2
             ;;
 
           coverage)
@@ -154,11 +155,13 @@ let
               rm -rf "$BUILD_DIR"/*.o "$BUILD_DIR"/*.so
             fi
 
-            make build TEST=1 COVERAGE=1 1>&2
+            make
+            make prefix="$BUILD_DIR" datadir="$BUILD_DIR" libdir="$BUILD_DIR"/lib install TEST=1 COVERAGE=1 1>&2
             ;;
 
           test-core)
-            make build TEST_CORE=1 1>&2
+            make
+            make prefix="$BUILD_DIR" datadir="$BUILD_DIR" libdir="$BUILD_DIR"/lib install TEST_CORE=1 1>&2
             ;;
 
           gdb)
@@ -166,7 +169,8 @@ let
             ;;
 
           *)
-            make build 1>&2
+            make
+            make prefix="$BUILD_DIR" datadir="$BUILD_DIR" libdir="$BUILD_DIR"/lib install 1>&2
             ;;
         esac
 

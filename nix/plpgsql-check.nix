@@ -17,11 +17,13 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [ postgresql ];
-
+  buildPhase = ''
+    make
+  '';
   installPhase = ''
-    install -D -t $out *${postgresql.dlSuffix}
-    install -D -t $out *.sql
-    install -D -t $out *.control
+    make prefix=$out/postgresql datadir=$out/postgresql libdir=$out/postgresql install
+    mv $out/postgresql/* $out
+    rmdir $out/postgresql
   '';
 
   meta = with lib; {

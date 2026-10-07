@@ -142,7 +142,7 @@ jobs:
         run: |
           nix-build tests
           cd examples/hello
-          ../../result/bin/xpg -v 15 psql -v ON_ERROR_STOP=1 -c "CREATE EXTENSION plpgsql_check;"
+          ../../result/bin/xpg -v 18 psql -v ON_ERROR_STOP=1 -c "CREATE EXTENSION plpgsql_check;"
 
   build-on-macos:
     runs-on: macos-15

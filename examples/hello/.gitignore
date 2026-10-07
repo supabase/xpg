@@ -6,3 +6,5 @@ results/
 *.bc
 *.diffs
 sql/hello--*.sql
+build-*
+hello.dylib

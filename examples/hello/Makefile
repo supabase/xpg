@@ -9,14 +9,6 @@ ifeq ($(COVERAGE), 1)
 PG_CFLAGS += --coverage
 endif
 
-ifeq ($(CC),gcc)
-  GCC_MAJ := $(firstword $(subst ., ,$(shell $(CC) -dumpfullversion -dumpversion)))
-  GCC_GE14 = $(shell test $(GCC_MAJ) -ge 14; echo $$?)
-  ifeq ($(GCC_GE14),0)
-    PG_CFLAGS += -Wmissing-variable-declarations
-  endif
-endif
-
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
@@ -39,31 +31,13 @@ REGRESS_OPTS = --use-existing --inputdir=test
 MODULE_big = $(EXTENSION)
 SRC = $(wildcard $(SRC_DIR)/*.c)
 
-ifdef BUILD_DIR
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRC))
-else
-OBJS = $(patsubst $(SRC_DIR)/%.c, src/%.o, $(SRC)) # if no BUILD_DIR, just build on src so standard PGXS `make` works
-endif
+OBJS = $(patsubst $(SRC_DIR)/%.c, src/%.o, $(SRC))
 
 PG_CONFIG = pg_config
 
 PG_CPPFLAGS := $(CPPFLAGS) -DEXTVERSION=\"$(EXTVERSION)\"
 
 all: sql/$(EXTENSION)--$(EXTVERSION).sql $(EXTENSION).control
-
-build: $(BUILD_DIR)/$(EXTENSION).$(SHARED_EXT) sql/$(EXTENSION)--$(EXTVERSION).sql $(EXTENSION).control
-
-$(BUILD_DIR)/.gitignore: sql/$(EXTENSION)--$(EXTVERSION).sql $(EXTENSION).control
-	mkdir -p $(BUILD_DIR)/extension
-	cp $(EXTENSION).control $(BUILD_DIR)/extension
-	cp sql/$(EXTENSION)--$(EXTVERSION).sql $(BUILD_DIR)/extension
-	echo "*" > $(BUILD_DIR)/.gitignore
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(BUILD_DIR)/.gitignore
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/$(EXTENSION).$(SHARED_EXT): $(EXTENSION).$(SHARED_EXT)
-	mv $? $@
 
 sql/$(EXTENSION)--$(EXTVERSION).sql: sql/$(EXTENSION).sql
 	cp $< $@
