@@ -233,6 +233,15 @@ let
           "$regress/"
         install -Dm644 src/test/regress/parallel_schedule "$regress/parallel_schedule"
 
+        # upstream keeps these out of installcheck because they change
+        # cluster-wide state; extension test suites running on a disposable
+        # cluster can still use them
+        mkdir -p "$regress/unsafe_tests"
+        cp -r \
+          src/test/modules/unsafe_tests/sql \
+          src/test/modules/unsafe_tests/expected \
+          "$regress/unsafe_tests/"
+
         moveToOutput "lib/pgxs" "$out" # looks strange, but not deleting it
         moveToOutput "lib/libpgcommon*.a" "$out"
         moveToOutput "lib/libpgport*.a" "$out"
