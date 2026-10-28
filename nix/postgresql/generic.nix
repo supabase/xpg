@@ -142,6 +142,16 @@ let
 
       buildFlags = [ "world" ];
 
+      # cassert builds (17+) come with UBSAN. configure picks CFLAGS up from the
+      # environment, and PostgreSQL links via $(CC) $(CFLAGS), so the sanitizer
+      # runtime is linked too (NIX_CFLAGS_COMPILE alone would leave
+      # __ubsan_handle_* undefined at link time).
+      env.CFLAGS =
+        ""
+        + lib.optionalString cassertSupport "-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer "
+        + lib.optionalString (cassertSupport && stdenv.isDarwin) "-fno-sanitize=function"
+	+ lib.optionalString (cassertSupport && stdenv'.isLinux) "-fsanitize=address";
+
       # Makes cross-compiling work when xml2-config can't be executed on the host.
       # Fixed upstream in https://github.com/postgres/postgres/commit/0bc8cebdb889368abdf224aeac8bc197fe4c9ae6
       env.NIX_CFLAGS_COMPILE =
@@ -293,9 +303,13 @@ let
 
       # PG 19+ embeds additional tool paths in installed artifacts, so keep the
       # stricter gcc-wrapper reference check only for older versions for now.
-      disallowedReferences = lib.optionals (lib.versionOlder (lib.versions.major version) "19") [
-        stdenv'.cc
-      ];
+      # Sanitizer builds are exempt: on darwin the clang wrapper bakes an LC_RPATH
+      # to its resource-root (where the ubsan runtime lives) into every binary.
+      disallowedReferences =
+        lib.optionals (lib.versionOlder (lib.versions.major version) "19" && !cassertSupport)
+          [
+            stdenv'.cc
+          ];
 
       passthru =
         let

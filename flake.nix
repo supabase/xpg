@@ -56,6 +56,23 @@
         }
       );
 
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = pkgs.mkShell {
+
+	    nativeBuildInputs = with pkgs; [
+                gcc
+	        clang
+                gnumake
+            ];
+          };
+	}
+      );
+
       apps = forAllSystems (
         system:
         let

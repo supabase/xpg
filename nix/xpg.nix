@@ -54,6 +54,10 @@ let
           ''
             if [ "$_arg_cassert" = on ]; then
               export PATH=${ourPg."postgresql_${v}_cassert"}/bin:"$PATH"
+
+	      # from EDB blog https://www.enterprisedb.com/blog/stack-buffer-overflow-exercise-addresssanitizer-and-postgresql
+	      export UBSAN_OPTIONS="print_stacktrace=1:disable_coredump=0:abort_on_error=1:verbosity=2"
+	      export ASAN_OPTIONS="print_stacktrace=1:disable_coredump=0:abort_on_error=1:detect_leaks=0:detct_stack_use_after_return=0"
             else
               export PATH=${ourPg."postgresql_${v}"}/bin:"$PATH"
             fi

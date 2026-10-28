@@ -103,6 +103,24 @@ jobs:
             nix run .#xpg${{ matrix.pg-version }} -- test-core
           fi
 
+      - name: Build postgres extension with ubsan error
+        run: |
+          cd examples/hello
+          make clean
+          rm -rf ./build-*
+          xpg --cassert -v ${{ matrix.pg-version }} build
+
+      - name: Test postgres extension
+        run: |
+          cd examples/hello
+          HELLO_DIV_BY_ZERO=1 xpg --cassert -v ${{ matrix.pg-version }} test 2>&1 |  grep 'runtime error: division by zero'
+
+      - name: Test postgres extension
+        run: |
+          gcc --version
+          cd examples/hello
+          HELLO_OOB_WRITE=1 xpg --cassert -v ${{ matrix.pg-version }} test 2>&1 |  grep 'runtime error: store to address'
+
       - if: ${{ failure() }}
         run: |
           cd examples/hello
