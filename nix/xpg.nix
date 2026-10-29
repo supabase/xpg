@@ -76,7 +76,9 @@ let
   xpg =
     checked-shell-script
       {
-        name = "xpg${defaultVersion}";
+        # a build pinned to one version is named after it (xpg17); a build that
+        # selects the version with -v keeps the plain name consumers call
+        name = if builtins.length versions == 1 then "xpg${defaultVersion}" else "xpg";
         docs = "Develop native PostgreSQL extensions";
         args = [
           "ARG_POSITIONAL_SINGLE([operation], [Operation])"

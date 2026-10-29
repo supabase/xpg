@@ -67,7 +67,7 @@
           };
         in
         {
-          default = mkApp "xpg" xpgPkgs.xpg17;
+          default = mkApp "xpg" xpgPkgs.xpg;
 
           xpg12 = mkApp "xpg12" xpgPkgs.xpg12;
           xpg13 = mkApp "xpg13" xpgPkgs.xpg13;
