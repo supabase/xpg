@@ -39,7 +39,6 @@ stdenv.mkDerivation rec {
     make
   '';
   installPhase = ''
-    echo $out
     make install \
     	datadir=$out/share \
 	pkglibdir=$out/lib \

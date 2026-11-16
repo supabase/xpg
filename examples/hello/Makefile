@@ -4,7 +4,7 @@ SRC_DIR = src
 PG_CFLAGS = -std=c11 -Wextra -Wall -Werror \
 	-Wno-declaration-after-statement \
 	-Wno-vla \
-	-Wno-long-long
+	-Wno-long-long -g -O0
 ifeq ($(COVERAGE), 1)
 PG_CFLAGS += --coverage
 endif

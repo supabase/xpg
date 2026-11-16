@@ -90,6 +90,7 @@ let
         url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
         inherit hash;
       };
+      dontStrip = true;
 
       outputs = [
         "out"
@@ -150,6 +151,7 @@ let
         #       that never returns and pins at 100% CPU saturation of a single core. Possibly
         #       revisit the below if this ever gets fixed
         + lib.optionalString (cassertSupport && stdenv'.isLinux) "-fsanitize=address";
+	# + " -O0 -g ";
 
       # Makes cross-compiling work when xml2-config can't be executed on the host.
       # Fixed upstream in https://github.com/postgres/postgres/commit/0bc8cebdb889368abdf224aeac8bc197fe4c9ae6
@@ -157,6 +159,7 @@ let
         "-std=c11 "
         + lib.optionalString (olderThan "13") "-I${libxml2.dev}/include/libxml2"
         + (if stdenv.isDarwin then " -Wno-error=implicit-function-declaration" else "");
+
 
       configureFlags = [
         "--with-openssl"
@@ -166,7 +169,9 @@ let
         "--libdir=$(lib)/lib"
         "--with-system-tzdata=${tzdata}/share/zoneinfo"
         "--enable-debug"
+	"CFLAGS=-O0 -g"
         (lib.optionalString systemdSupport' "--with-systemd")
+
         (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
       ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
@@ -270,6 +275,12 @@ let
             fi
           done
         fi
+
+      # get debug line numbers into binaries
+      for f in $out/bin/postgres; do
+        dsymutil "$f"
+      done
+
       ''
       + lib.optionalString jitSupport ''
         # Move the bitcode and libllvmjit.so library out of $lib; otherwise, every client that
