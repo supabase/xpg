@@ -7,21 +7,29 @@
 
 stdenv.mkDerivation rec {
   pname = "plpgsql-check";
-  version = "2.10.12";
+  version = "2.10.16";
 
   src = fetchFromGitHub {
     owner = "okbob";
     repo = "plpgsql_check";
     rev = "v${version}";
-    hash = "sha256-99TemcnEgbhSY1YhSrIdAlclgIzak+X2PEaC/QUJwic=";
+    hash = "sha256-L+mb3nrO10kN9mlItuSg4SiUdP+zWhXEk74vWRY+QsQ=";
   };
 
   buildInputs = [ postgresql ];
 
+  buildPhase = ''
+    make
+  '';
+
   installPhase = ''
-    install -D -t $out *${postgresql.dlSuffix}
-    install -D -t $out *.sql
-    install -D -t $out *.control
+    make install \
+    	datadir=$out/share \
+	pkglibdir=$out/lib \
+	bindir=$out/bin \
+	docdir=$out/share/doc \
+	mandir=$out/share/man \
+	PG_SHAREDIR=$out/share
   '';
 
   meta = with lib; {
