@@ -168,6 +168,7 @@ let
         "--enable-debug"
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
+        (lib.optionalString (cassertSupport) "CFLAGS=-O0 -g")
       ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
@@ -270,6 +271,12 @@ let
             fi
           done
         fi
+      ''
+      + lib.optionalString (stdenv'.isDarwin && cassertSupport) ''
+        # get debug line numbers into binaries
+        for f in $out/bin/*; do
+          dsymutil "$f"
+        done
       ''
       + lib.optionalString jitSupport ''
         # Move the bitcode and libllvmjit.so library out of $lib; otherwise, every client that
