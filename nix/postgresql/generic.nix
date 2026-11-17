@@ -144,7 +144,7 @@ let
 
       env.CFLAGS =
         ""
-        + lib.optionalString cassertSupport "-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer "
+        + lib.optionalString cassertSupport "-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -O0 -g "
         + lib.optionalString (cassertSupport && stdenv.isDarwin) "-fno-sanitize=function"
         # TODO: compiling with clang on darwin with -fsanitize=address results in a binary
         #       that never returns and pins at 100% CPU saturation of a single core. Possibly
@@ -168,7 +168,6 @@ let
         "--enable-debug"
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
-        (lib.optionalString (cassertSupport) "CFLAGS=-O0 -g")
       ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
