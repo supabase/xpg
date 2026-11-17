@@ -104,9 +104,15 @@ jobs:
           # test for options argument
           nix run .#xpg${{ matrix.pg-version }} -- --options "-c work_mem=8MB" psql -c "DO \$\$ BEGIN ASSERT current_setting('work_mem') = '8MB'; END \$\$;"
 
-          # test for cassert enabled build
-          rm -rf build-${{ matrix.pg-version }}
-          nix run .#xpg${{ matrix.pg-version }} -- --cassert psql -c "DO \$\$ BEGIN ASSERT current_setting('debug_assertions') = 'on'; END \$\$;"
+          # test for cassert enabled build, switching from the plain build rebuilds the extension
+          nix run .#xpg${{ matrix.pg-version }} -- --cassert psql -c "DO \$\$ BEGIN ASSERT current_setting('debug_assertions') = 'on'; END \$\$;" 2> cassert.log
+          cat cassert.log
+          grep -q "removing build-${{ matrix.pg-version }} and rebuilding" cassert.log
+
+          # and switching back rebuilds again
+          nix run .#xpg${{ matrix.pg-version }} -- psql -c "DO \$\$ BEGIN ASSERT current_setting('debug_assertions') = 'off'; END \$\$;" 2> plain.log
+          cat plain.log
+          grep -q "removing build-${{ matrix.pg-version }} and rebuilding" plain.log
 
           # test for pg core test
           rm -rf ./build-{{ matrix.pg-version }}
