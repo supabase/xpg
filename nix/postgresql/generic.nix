@@ -144,7 +144,7 @@ let
 
       env.CFLAGS =
         ""
-        + lib.optionalString cassertSupport "-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer "
+        + lib.optionalString cassertSupport "-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -O0 -g "
         + lib.optionalString (cassertSupport && stdenv.isDarwin) "-fno-sanitize=function"
         # TODO: compiling with clang on darwin with -fsanitize=address results in a binary
         #       that never returns and pins at 100% CPU saturation of a single core. Possibly
@@ -270,6 +270,12 @@ let
             fi
           done
         fi
+      ''
+      + lib.optionalString (stdenv'.isDarwin && cassertSupport) ''
+        # get debug line numbers into binaries
+        for f in $out/bin/*; do
+          dsymutil "$f"
+        done
       ''
       + lib.optionalString jitSupport ''
         # Move the bitcode and libllvmjit.so library out of $lib; otherwise, every client that
