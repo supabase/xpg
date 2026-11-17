@@ -19,8 +19,9 @@ stdenv.mkDerivation rec {
   buildInputs = [ postgresql ];
 
   buildPhase = ''
-    make
+    make PG_CFLAGS='-g -O0'
   '';
+  dontStrip = true;
 
   installPhase = ''
     make install \
@@ -30,6 +31,11 @@ stdenv.mkDerivation rec {
 	docdir=$out/share/doc \
 	mandir=$out/share/man \
 	PG_SHAREDIR=$out/share
+
+    # get debug line numbers into binaries
+    for f in $out/lib/*; do
+      dsymutil "$f"
+    done
   '';
 
   meta = with lib; {

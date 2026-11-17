@@ -31,12 +31,14 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = [ postgresql autoconf automake pkg-config libtool which perl libxml2 geos gdalMinimal gmp proj protobufc];
   buildInputs = [ postgresql autoconf automake pkg-config libtool which perl libxml2 geos gdalMinimal gmp proj protobufc];
 
+  dontStrip = true;
+
   configurePhase = ''
     ./autogen.sh
     ./configure
   '';
   buildPhase = ''
-    make
+    make PG_CFLAGS='-g -O0'
   '';
   installPhase = ''
     make install \
@@ -46,6 +48,11 @@ stdenv.mkDerivation rec {
 	docdir=$out/share/doc \
 	mandir=$out/share/man \
 	PG_SHAREDIR=$out/share
+
+    # get debug line numbers into binaries
+    for f in $out/lib/*.dylib $out/lib/*.so; do
+      if [ -f "$f" ]; then dsymutil "$f"; fi
+    done
   '';
 
   meta = with lib; {

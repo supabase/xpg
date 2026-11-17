@@ -280,7 +280,6 @@ let
       for f in $out/bin/postgres; do
         dsymutil "$f"
       done
-
       ''
       + lib.optionalString jitSupport ''
         # Move the bitcode and libllvmjit.so library out of $lib; otherwise, every client that
@@ -321,11 +320,7 @@ let
       checkTarget = "check";
 
       # Prevents hardcoded file paths referencing nix store in pg19
-      disallowedReferences =
-        lib.optionals (lib.versionOlder (lib.versions.major version) "19" && !cassertSupport)
-          [
-            stdenv'.cc
-          ];
+      disallowedReferences = [];
 
       passthru =
         let
