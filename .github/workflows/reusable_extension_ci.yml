@@ -3,7 +3,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       matrix:
         pg-version: ["14", "15", "16", "17", "18", "19"]
@@ -21,19 +21,19 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build
-        run: nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "xpg -v ${{ matrix.pg-version }} build"
+        run: nix develop --command xpg --cassert -v ${{ matrix.pg-version }} build
 
       - name: Run tests
-        run: nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "xpg -v ${{ matrix.pg-version }} test"
+        run: nix develop --command xpg --cassert -v ${{ matrix.pg-version }} test
 
 
   test-on-macos:
-    runs-on: macos-26
+    runs-on: blacksmith-6vcpu-macos-26
     strategy:
       matrix:
         pg-version: ["17"]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.3.1
 
       - name: Install Nix
         uses: cachix/install-nix-action@c134e4c9e34bac6cab09cf239815f9339aaaf84e # v31.5.1
@@ -48,17 +48,17 @@ jobs:
 
       - name: clang analyze
         run: |
-          nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "CPPFLAGS='--analyze -Xanalyzer  -analyzer-werror' xpg -v ${{ matrix.pg-version }} build"
+          CPPFLAGS='--analyze -Xanalyzer  -analyzer-werror' nix develop --command xpg -v ${{ matrix.pg-version }} build
           rm -rf ./build-${{ matrix.pg-version }}
 
       - name: Build
-        run: nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "xpg -v ${{ matrix.pg-version }} build"
+        run: nix develop --command xpg -v ${{ matrix.pg-version }} build
 
       - name: Run tests
-        run: nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "xpg -v ${{ matrix.pg-version }} test"
+        run: nix develop --command xpg -v ${{ matrix.pg-version }} test
 
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     strategy:
       matrix:
@@ -77,7 +77,7 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Coverage
-        run: nix-shell --argstr pgVersion "${{ matrix.pg-version }}" --arg cassert false --run "xpg -v ${{ matrix.pg-version }} coverage"
+        run: nix develop --command xpg -v ${{ matrix.pg-version }} coverage
 
       - name: Send coverage to Coveralls
         uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
