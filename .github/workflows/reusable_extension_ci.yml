@@ -1,9 +1,18 @@
 on:
   workflow_call:
+    inputs:
+      linux-runner:
+        description: Runner to use for linux jobs
+        type: string
+        default: ubuntu-latest
+      macos-runner:
+        description: Runner to use for macos jobs
+        type: string
+        default: macos-latest
 
 jobs:
   test:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ inputs.linux-runner }}
     strategy:
       matrix:
         pg-version: ["14", "15", "16", "17", "18", "19"]
@@ -28,7 +37,7 @@ jobs:
 
 
   test-on-macos:
-    runs-on: blacksmith-6vcpu-macos-26
+    runs-on: ${{ inputs.macos-runner }}
     strategy:
       matrix:
         pg-version: ["17"]
@@ -58,7 +67,7 @@ jobs:
         run: nix develop --command xpg -v ${{ matrix.pg-version }} test
 
   coverage:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ inputs.linux-runner }}
 
     strategy:
       matrix:
