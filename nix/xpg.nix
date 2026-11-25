@@ -163,6 +163,19 @@ let
 
         COVERAGE_INFO=$BUILD_DIR/coverage.info
 
+        # the build dir is shared by the cassert and plain builds, and a server of one
+        # flavor crashes loading an extension built for the other, so rebuild on a switch
+        cassert_marker="$BUILD_DIR"/.cassert
+        if [ "$_arg_operation" != gdb ]; then
+          if [ -f "$cassert_marker" ] && [ "$(cat "$cassert_marker")" != "$_arg_cassert" ]; then
+            echo "$BUILD_DIR was built with cassert=$(cat "$cassert_marker") but this run has cassert=$_arg_cassert" >&2
+            echo "removing $BUILD_DIR and rebuilding, use the same --cassert/--no-cassert on every run to avoid this" >&2
+            rm -rf "$BUILD_DIR"
+          fi
+          mkdir -p "$BUILD_DIR"
+          echo "$_arg_cassert" > "$cassert_marker"
+        fi
+
         # commands that require the build ready
         case "$_arg_operation" in
           test)
