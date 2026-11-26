@@ -1,3 +1,6 @@
+permissions:
+  contents: read
+
 on:
   workflow_call:
     inputs:
@@ -15,7 +18,19 @@ jobs:
     runs-on: ${{ inputs.linux-runner }}
     strategy:
       matrix:
-        pg-version: ["14", "15", "16", "17", "18", "19"]
+        include:
+          - pg-version: '19'
+            cassert: true
+          - pg-version: '18'
+            cassert: true
+          - pg-version: '17'
+            cassert: true
+          - pg-version: '16'
+            cassert: true
+          - pg-version: '15'
+            cassert: true
+          - pg-version: '14'
+            cassert: false
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -30,17 +45,21 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build
-        run: nix develop --command xpg --cassert -v ${{ matrix.pg-version }} build
+        run: nix develop --command xpg ${{ matrix.cassert && '--cassert' || '' }} -v ${{ matrix.pg-version }} build
 
       - name: Run tests
-        run: nix develop --command xpg --cassert -v ${{ matrix.pg-version }} test
+        run: nix develop --command xpg ${{ matrix.cassert && '--cassert' || '' }} -v ${{ matrix.pg-version }} test
 
 
   test-on-macos:
     runs-on: ${{ inputs.macos-runner }}
     strategy:
       matrix:
-        pg-version: ["17"]
+        include:
+          - pg-version: '17'
+            cassert: true
+          - pg-version: '15'
+            cassert: false
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.3.1
 
@@ -57,14 +76,18 @@ jobs:
 
       - name: clang analyze
         run: |
-          CPPFLAGS='--analyze -Xanalyzer  -analyzer-werror' nix develop --command xpg -v ${{ matrix.pg-version }} build
+          export CPPFLAGS='--analyze -Xanalyzer  -analyzer-werror' 
+          nix develop --command xpg -v ${{ matrix.pg-version }} build
           rm -rf ./build-${{ matrix.pg-version }}
 
       - name: Build
-        run: nix develop --command xpg -v ${{ matrix.pg-version }} build
+        run: |
+          nix develop --command xpg ${{ matrix.cassert && '--cassert' || '' }} -v ${{ matrix.pg-version }} build
 
       - name: Run tests
-        run: nix develop --command xpg -v ${{ matrix.pg-version }} test
+        run: |
+          export UBSAN_OPTIONS="print_stacktrace=1:disable_coredump=0:abort_on_error=1:verbosity=0"
+          nix develop --command xpg ${{ matrix.cassert && '--cassert' || '' }} -v ${{ matrix.pg-version }} test
 
   coverage:
     runs-on: ${{ inputs.linux-runner }}
